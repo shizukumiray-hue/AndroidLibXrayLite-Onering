@@ -1,0 +1,94 @@
+name: Build libv2ray.aar with Onering
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout AndroidLibXrayLite
+      uses: actions/checkout@v4
+    
+    - name: Checkout xray-core-onering
+      uses: actions/checkout@v4
+      with:
+        repository: shizukumiray-hue/xray-core-onering
+        ref: feature/onering-stable-v26.3.27
+        path: xray-core-onering
+        token: ${{ secrets.GH_PAT }}
+    
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+    
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+    
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+    
+    - name: Install Android SDK components
+      run: |
+        sdkmanager "platforms;android-24" "build-tools;34.0.0" "ndk;26.3.11579264"
+    
+    - name: Install gomobile
+      run: |
+        go install golang.org/x/mobile/cmd/gomobile@latest
+        echo "$HOME/go/bin" >> $GITHUB_PATH
+    
+    - name: Init gomobile
+      run: |
+        export PATH=$PATH:$HOME/go/bin
+        gomobile init
+    
+    - name: Update go.mod to use local xray-core-onering
+      run: |
+        # Update replace directive to use checked out xray-core-onering
+        go mod edit -replace github.com/xtls/xray-core=./xray-core-onering
+        cat go.mod
+    
+    - name: Build libv2ray.aar
+      run: |
+        export PATH=$PATH:$HOME/go/bin
+        go mod tidy -v
+        gomobile bind -v -androidapi 24 -trimpath \
+          -ldflags='-s -w -buildid= -checklinkname=0' .
+    
+    - name: Verify Onering Implementation
+      run: |
+        echo "=== Verifying Onering Implementation ==="
+        ls -lh libv2ray.aar
+        
+        # Extract and check
+        mkdir -p /tmp/aar_check
+        unzip -q libv2ray.aar -d /tmp/aar_check
+        
+        echo "=== Checking for Onering symbols ==="
+        strings /tmp/aar_check/jni/arm64-v8a/libgojni.so | grep "common/onering" | head -20 || echo "WARNING: No onering symbols found!"
+        
+        echo "=== AAR structure ==="
+        unzip -l libv2ray.aar | grep -E "jni|classes"
+    
+    - name: Upload libv2ray.aar
+      uses: actions/upload-artifact@v4
+      with:
+        name: libv2ray-onering-aar
+        path: libv2ray.aar
+        retention-days: 30
+    
+    - name: Upload libv2ray-sources.jar
+      uses: actions/upload-artifact@v4
+      with:
+        name: libv2ray-onering-sources
+        path: libv2ray-sources.jar
+        retention-days: 30
