@@ -17,7 +17,6 @@ import (
 	corestats "github.com/xtls/xray-core/features/stats"
 	coreserial "github.com/xtls/xray-core/infra/conf/serial"
 	_ "github.com/xtls/xray-core/main/distro/all"
-	browser_dialer "github.com/xtls/xray-core/transport/internet/browser_dialer"
 	mobasset "golang.org/x/mobile/asset"
 )
 

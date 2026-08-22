@@ -1,11 +1,5 @@
 package libv2ray
 
-import (
-	"fmt"
-
-	corenet "github.com/xtls/xray-core/common/net"
-)
-
 // ProcessFinder is an interface for Android process finding functionality.
 // Apps using AndroidLibXrayLite should implement FindProcessByConnection()
 // and pass the implementation to RegisterProcessFinder() before starting the core.
