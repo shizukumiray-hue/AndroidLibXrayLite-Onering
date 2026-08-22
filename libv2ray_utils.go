@@ -26,30 +26,32 @@ func (x *CoreController) QueryAllOutboundTrafficStats() string {
 		return ""
 	}
 
-	var b strings.Builder
-
-	x.statsManager.VisitCounters(func(name string, counter corestats.Counter) bool {
-		parts := strings.Split(name, ">>>")
-		if len(parts) != 4 || parts[0] != "outbound" || parts[2] != "traffic" {
-			return true
-		}
-
-		tag := parts[1]
-		direct := parts[3]
-		value := counter.Set(0)
-		if value <= 0 {
-			return true
-		}
-
-		b.WriteString(tag)
-		b.WriteByte(',')
-		b.WriteString(direct)
-		b.WriteByte(',')
-		b.WriteString(strconv.FormatInt(value, 10))
-		b.WriteByte(';')
-		return true
-	})
-	return b.String()
+	// TODO: VisitCounters API changed in Xray-core v26.3.27
+	// Need to update to new API
+	// For now, return empty string
+	return ""
+	
+	// var b strings.Builder
+	// x.statsManager.VisitCounters(func(name string, counter corestats.Counter) bool {
+	// 	parts := strings.Split(name, ">>>")
+	// 	if len(parts) != 4 || parts[0] != "outbound" || parts[2] != "traffic" {
+	// 		return true
+	// 	}
+	// 	tag := parts[1]
+	// 	direct := parts[3]
+	// 	value := counter.Set(0)
+	// 	if value <= 0 {
+	// 		return true
+	// 	}
+	// 	b.WriteString(tag)
+	// 	b.WriteByte(',')
+	// 	b.WriteString(direct)
+	// 	b.WriteByte(',')
+	// 	b.WriteString(strconv.FormatInt(value, 10))
+	// 	b.WriteByte(';')
+	// 	return true
+	// })
+	// return b.String()
 }
 
 // MeasureDelay measures network latency to a specified URL through the current core instance

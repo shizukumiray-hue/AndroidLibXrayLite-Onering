@@ -144,7 +144,8 @@ func CheckVersionX() string {
 // If the dialer address is empty, it will disable the browser dialer and close existing connections
 func ReconcileBrowserDialer(dialerAddr string) {
 	setEnvVariable(browserDialerAddress, dialerAddr)
-	browser_dialer.Reload()
+	// TODO: browser_dialer.Reload() not available in Xray-core v26.3.27
+	// browser_dialer.Reload()
 }
 
 // doShutdown shuts down the Xray instance and cleans up resources
