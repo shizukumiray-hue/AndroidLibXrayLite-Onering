@@ -19,9 +19,8 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: shizukumiray-hue/xray-core-onering
-        ref: feature/onering-stable-v26.3.27
+        ref: main
         path: xray-core-onering
-        token: ${{ secrets.GH_PAT }}
     
     - name: Setup Go
       uses: actions/setup-go@v5
