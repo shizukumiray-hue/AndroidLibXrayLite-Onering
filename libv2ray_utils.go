@@ -7,12 +7,15 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/xtls/xray-core/app/stats"
 	corenet "github.com/xtls/xray-core/common/net"
 	"github.com/xtls/xray-core/common/serial"
 	core "github.com/xtls/xray-core/core"
+	corestats "github.com/xtls/xray-core/features/stats"
 	coreserial "github.com/xtls/xray-core/infra/conf/serial"
 )
 
@@ -24,32 +27,38 @@ func (x *CoreController) QueryAllOutboundTrafficStats() string {
 		return ""
 	}
 
-	// TODO: VisitCounters API changed in Xray-core v26.3.27
-	// Need to update to new API
-	// For now, return empty string
-	return ""
-	
-	// var b strings.Builder
-	// x.statsManager.VisitCounters(func(name string, counter corestats.Counter) bool {
-	// 	parts := strings.Split(name, ">>>")
-	// 	if len(parts) != 4 || parts[0] != "outbound" || parts[2] != "traffic" {
-	// 		return true
-	// 	}
-	// 	tag := parts[1]
-	// 	direct := parts[3]
-	// 	value := counter.Set(0)
-	// 	if value <= 0 {
-	// 		return true
-	// 	}
-	// 	b.WriteString(tag)
-	// 	b.WriteByte(',')
-	// 	b.WriteString(direct)
-	// 	b.WriteByte(',')
-	// 	b.WriteString(strconv.FormatInt(value, 10))
-	// 	b.WriteByte(';')
-	// 	return true
-	// })
-	// return b.String()
+	// In xray-core v26.3.27, VisitCounters is not part of the public Manager interface
+	// in features/stats/stats.go, but is still available on the concrete *stats.Manager
+	// type in app/stats/stats.go. We need to type-assert to access it.
+	manager, ok := x.statsManager.(*stats.Manager)
+	if !ok {
+		return ""
+	}
+
+	var b strings.Builder
+
+	manager.VisitCounters(func(name string, counter corestats.Counter) bool {
+		parts := strings.Split(name, ">>>")
+		if len(parts) != 4 || parts[0] != "outbound" || parts[2] != "traffic" {
+			return true
+		}
+
+		tag := parts[1]
+		direct := parts[3]
+		value := counter.Set(0)
+		if value <= 0 {
+			return true
+		}
+
+		b.WriteString(tag)
+		b.WriteByte(',')
+		b.WriteString(direct)
+		b.WriteByte(',')
+		b.WriteString(strconv.FormatInt(value, 10))
+		b.WriteByte(';')
+		return true
+	})
+	return b.String()
 }
 
 // MeasureDelay measures network latency to a specified URL through the current core instance
